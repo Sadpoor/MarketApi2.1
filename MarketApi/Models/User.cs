@@ -5,7 +5,8 @@ namespace MarketApi.models
 {
     public class User
     {
-        public int Id { get; set; }
+        [Key]   
+        public int ID { get; set; }
         public string Password { get; set; }  // also we can hash it
         public string Name { get; set; }
         [Phone] public string? phoneNumber { get; set; }

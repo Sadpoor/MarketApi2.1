@@ -3,7 +3,6 @@ using MarketApi.DTOs.User;
 using MarketApi.models;
 using MarketApi.Service;
 using Microsoft.AspNetCore.Mvc; 
-using MarketApi;
 
 namespace MarketApi.Controllers
 {

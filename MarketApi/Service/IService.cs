@@ -3,6 +3,7 @@ using MarketApi.models;
 using System.ComponentModel.DataAnnotations;
 using MarketApi.DTOs.Product;
 using MarketApi.DTOs.User;
+using MarketApi.DTOs.Cart;
 
 namespace MarketApi.Service
 {
@@ -18,7 +19,7 @@ namespace MarketApi.Service
         Product? GetById(int id);
         bool AddToCart(int id);
         void EmptyCart();
-        List<Product> Cart();
+        CheckOutCartDto Cart();
         bool EnterDiscountCode(string Code);
         void Checkout();
         bool RateProduct(int id, [Range(1, 5)] float rate);
