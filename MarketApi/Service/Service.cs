@@ -8,8 +8,8 @@ namespace MarketApi.Service
 {
     public class Service : IServices
     {   
-        private MarketDb _context;
-        public Service(MarketDb context)
+        private AppDbContext _context;
+        public Service(AppDbContext context)
         {
             _context = context;
         }
@@ -89,7 +89,7 @@ namespace MarketApi.Service
         }
         public bool EnterDiscountCode(string Code)
         {
-            DiscountCode? discountCode = _context.DiscountCodes.FirstOrDefault(d => d.Code == Code);
+            DiscountCode? discountCode = _context.Discounts.FirstOrDefault(d => d.Code == Code);
             if (discountCode == null)
             {
                 return false;
@@ -227,7 +227,7 @@ namespace MarketApi.Service
                 Code = code,
                 DiscountPrecent = discount
             };
-            _context.DiscountCodes.Add(discountCode);
+            _context.Discounts.Add(discountCode);
             _context.SaveChanges();
             return true;
         }
