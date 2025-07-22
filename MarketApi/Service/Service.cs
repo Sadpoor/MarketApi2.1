@@ -4,14 +4,21 @@ using MarketApi.DTOs.User;
 using MarketApi.DTOs.Cart;
 using MarketApi.models;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 namespace MarketApi.Service
 {
     public class Service : IServices
     {   
         private AppDbContext _context;
-        public Service(AppDbContext context)
+        private readonly IConfiguration _configuration;
+        public Service(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
         User? currentUser = null;
         DiscountCode? currentDiscountCode = null;
@@ -147,15 +154,15 @@ namespace MarketApi.Service
             _context.SaveChanges();
             return newUser;
         }
-        public bool Login(string Name, string password)
+        public string? Login(string Name, string password)
         {
             User? user = _context.Users.FirstOrDefault(u => u.Name == Name && u.Password == password);
             if (user == null)
             {
-                return false;
+                return null;
             }
             currentUser = user;
-            return true;
+            return GenerateJwtToken(user);
         }
         public bool Logout()
         {
@@ -282,6 +289,30 @@ namespace MarketApi.Service
         }
         public List<User> GetAllUsers() => _context.Users.ToList();
 
+        private string GenerateJwtToken(User user)
+        {
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.ID.ToString()),
+                new Claim(JwtRegisteredClaimNames.UniqueName, user.Name),
+                new Claim(ClaimTypes.Role, user.Role.ToString())
+            };
+            var token = new JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiresInMinutes"])),
+                signingCredentials: creds
+            );
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
 
+        bool IServices.Login(string Name, string password)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

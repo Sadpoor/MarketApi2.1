@@ -2,7 +2,8 @@
 using MarketApi.DTOs.User;
 using MarketApi.models;
 using MarketApi.Service;
-using Microsoft.AspNetCore.Mvc; 
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MarketApi.Controllers
 {
@@ -17,6 +18,7 @@ namespace MarketApi.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Get()
         {
             var products = _service.GetAllProduct();
@@ -57,55 +59,30 @@ namespace MarketApi.Controllers
             }
             return Ok(product);
         }
+        [Authorize(Roles = "User")]
         [HttpPost("AddToCart/{id}")]
         public IActionResult AddToCart(int id)
         {
-            int role = _service.CheckRole();
-            if (role == -1)
-            {
-                return Unauthorized("You must be logged in to add products to the cart.");
-            }
-            else if (role == 1)
-            {
-                return Forbid("Admins cannot add products to the cart.");
-            }
-            else
-            {
-                var product = _service.GetById(id);
-                if (product == null) return NotFound();
-                return Ok(product);
-            }
+            var product = _service.GetById(id);
+            if (product == null) return NotFound();
+            var result = _service.AddToCart(id);
+            return Ok(result);
         }
+        [Authorize(Roles = "User")]
         [HttpPost("EmptyCart")]
         public IActionResult EmptyCart()
         {
-            int role = _service.CheckRole();
-            if (role == -1)
-            {
-                return Unauthorized("You must be logged in to add products to the cart.");
-            }
-            else if (role == 1)
-            {
-                return Forbid("Admins cannot empty cart");
-            }
             _service.EmptyCart();
             return Ok("Cart emptied successfully.");
         }
+        [Authorize(Roles = "User")]
         [HttpGet("Cart")]
         public IActionResult Cart()
         {
-            int role = _service.CheckRole();
-            if (role == -1)
-            {
-                return Unauthorized("You must be logged in to view the cart.");
-            }
-            else if (role == 1)
-            {
-                return Forbid("Admins cannot view cart");
-            }
             var cartItems = _service.Cart();
             return Ok(cartItems);
         }
+        [Authorize(Roles = "User")]
         [HttpPost("EnterDiscountCode")]
         public IActionResult EnterDiscountCode([FromBody] string code)
         {
@@ -125,6 +102,7 @@ namespace MarketApi.Controllers
             }
             return Ok("Discount code applied successfully.");
         }
+        [Authorize(Roles = "User")]
         [HttpGet("Checkout")]
         public IActionResult Checkout()
         {
@@ -134,6 +112,7 @@ namespace MarketApi.Controllers
             _service.Checkout();
             return Ok();
         }
+        [Authorize(Roles = "User")]
         [HttpPost("RateProduct")]
         public IActionResult RateProduct(int id, float rate)
         {
@@ -143,6 +122,7 @@ namespace MarketApi.Controllers
             var message = _service.RateProduct(id, rate);
             return Ok(message);
         }
+        [Authorize(Roles = "User")]
         [HttpPost("TotalPrice")]
         public IActionResult TotalPrice()
         {
@@ -152,19 +132,24 @@ namespace MarketApi.Controllers
             var totalPrice = _service.TotalPrice();
             return Ok(totalPrice);
         }
+        [AllowAnonymous]
         [HttpPatch("Signup")]
         public IActionResult Signup([FromBody] AddUserDto user)
         {
             var newUser = _service.Signup(user);
             return Ok(newUser);
         }
+        [AllowAnonymous]
         [HttpPost("Login")]
         public IActionResult Login([FromBody] string name, string password)
         {
-            var isLoggedIn = _service.Login(name, password);
-            return Ok(isLoggedIn);
+            var token = _service.Login(name, password);
+            if (token)
+                return Unauthorized("Invalid username or password.");
+            return Ok(new { token });
         }
 
+        [Authorize]
         [HttpPost("Logout")]
         public IActionResult Logout()
         {
@@ -175,6 +160,7 @@ namespace MarketApi.Controllers
             return Ok();
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPatch("UpdateUser")]
         public IActionResult UpdateUser(int id, [FromBody] UpdateUserDto user)
         {
@@ -185,6 +171,7 @@ namespace MarketApi.Controllers
             return Ok(updatedUser);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPatch("AddProduct")]
         public IActionResult AddProduct([FromBody] AddProductDto product)
         {
@@ -194,6 +181,7 @@ namespace MarketApi.Controllers
             var newProduct = _service.AddProduct(product);
             return Ok(newProduct);
         }
+        [Authorize(Roles = "Admin")]
         [HttpPatch("UpdateProduct")]
         public IActionResult UpdateProduct(int id, [FromBody] UpdateProductDto product)
         {
@@ -203,6 +191,7 @@ namespace MarketApi.Controllers
             var updatedProduct = _service.UpdateProduct(id, product);
             return Ok(updatedProduct);
         }
+        [Authorize(Roles = "Admin")]
         [HttpPost("DeleteProduct")]
         public IActionResult DeleteProduct(int id)
         {
@@ -212,6 +201,7 @@ namespace MarketApi.Controllers
             var deletedProduct = _service.DeleteProduct(id);
             return Ok(deletedProduct);
         }
+        [Authorize(Roles = "Admin")]
         [HttpPost("SetDiscountCode")]
         public IActionResult SetDiscountCode([FromBody] string code, decimal discount)
         {
@@ -221,6 +211,7 @@ namespace MarketApi.Controllers
             var setDiscountCode = _service.SetDiscountCode(code, discount);
             return Ok(setDiscountCode);
         }
+        [Authorize(Roles = "Admin")]
         [HttpPost("AddToInventory")]
         public IActionResult AddToInventory(int id, int quantity, int price)
         {
@@ -230,6 +221,7 @@ namespace MarketApi.Controllers
             var addedToInventory = _service.AddToInventory(id, quantity, price);
             return Ok(addedToInventory);
         }
+        [Authorize(Roles = "Admin")]
         [HttpPost("DeleteUser")]
         public IActionResult DeleteUser(int id)
         {
@@ -239,6 +231,7 @@ namespace MarketApi.Controllers
             var deletedUser = _service.DeleteUser(id);
             return Ok(deletedUser);
         }
+        [Authorize(Roles = "Admin")]
         [HttpPost("UpgradeUser")]
         public IActionResult UpgradeUser(int id)
         {
@@ -248,6 +241,7 @@ namespace MarketApi.Controllers
             var upgradedUser = _service.UpgradeUser(id);
             return Ok(upgradedUser);
         }
+        [Authorize(Roles = "Admin")]
         [HttpPost("DowngradeUser")]
         public IActionResult DowngradeUser(int id)
         {
@@ -257,6 +251,7 @@ namespace MarketApi.Controllers
             var downgradedUser = _service.DowngradeUser(id);
             return Ok(downgradedUser);
         }
+        [Authorize(Roles = "Admin")]
         [HttpGet("GetAllUsers")]
         public IActionResult GetAllUsers()
         {
@@ -266,6 +261,7 @@ namespace MarketApi.Controllers
             var allUsers = _service.GetAllUsers();
             return Ok(allUsers);
         }
+        [Authorize(Roles = "Admin")]
         [HttpPatch("InventoryCheck")]
         public IActionResult InventoryCheck([FromBody] Product product)
         {

@@ -1,0 +1,29 @@
+[33mcommit 9baa038acf5d304d59509e28ae4eaa8368d20140[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: M.Sadpoor <morteza.sadpoo@gmail.com>
+Date:   Mon Jul 21 16:09:31 2025 +0330
+
+    fix: fix connection to Server
+
+[33mcommit 3b885f005d0373914c1f39adb02b0998f21b5ade[m
+Author: M.Sadpoor <morteza.sadpoo@gmail.com>
+Date:   Mon Jul 21 15:22:13 2025 +0330
+
+    fix
+
+[33mcommit 849a9958c12f8eb7cfa08515a45ba85a4cae974f[m
+Author: M.Sadpoor <morteza.sadpoo@gmail.com>
+Date:   Sun Jul 13 08:58:15 2025 +0330
+
+    test
+
+[33mcommit 3797ac5bb3ab89b970b40a7d7d829d6424a692ac[m
+Author: m.sadeghian <m.sadeghian@PC1052>
+Date:   Sat Jul 12 17:49:26 2025 +0330
+
+    Add project files.
+
+[33mcommit 40297f78a278875caff6358abb7331c1f0f963f9[m
+Author: m.sadeghian <m.sadeghian@PC1052>
+Date:   Sat Jul 12 17:49:24 2025 +0330
+
+    Add .gitattributes and .gitignore.
