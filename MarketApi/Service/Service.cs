@@ -9,16 +9,27 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using MarketApi.Mappers;
+using MarketApi.DTOs.DiscountCode;
+//using MarketApi.DTOs.Actions;
+using System.Linq;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 namespace MarketApi.Service
 {
     public class Service : IServices
     {   
         private AppDbContext _context;
+        private readonly ProductMapper _productMapper;
+        private readonly DiscoutCodeMapper _dicountCodeMapper;
+        private readonly UserMapper _userMapper;
         private readonly IConfiguration _configuration;
-        public Service(AppDbContext context, IConfiguration configuration)
+        public Service(AppDbContext context, IConfiguration configuration, UserMapper userMapper,ProductMapper productMapper,DiscoutCodeMapper discoutCodeMapper)
         {
             _context = context;
             _configuration = configuration;
+            _userMapper = userMapper;
+            _productMapper = productMapper;
+            _dicountCodeMapper = discoutCodeMapper;
         }
         User? currentUser = null;
         DiscountCode? currentDiscountCode = null;
@@ -31,42 +42,46 @@ namespace MarketApi.Service
             }
             return;
         }
-
-
-        //now we can start the methods
-        public int CheckRole()
+        public List<Product> Products(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscount, bool Accending=true)
         {
-            if (currentUser == null)
+            var filteredProduct = _context.Products.AsQueryable();
+            if(category!=null) filteredProduct = filteredProduct.Where(p => p.Category == category);
+            if (sortBy != null)
             {
-                return -1; // not logged in
+                switch (sortBy)
+                {
+                    case SortBy.price:
+                        if (Accending) filteredProduct = filteredProduct.OrderBy(p => p.Price);
+                        else filteredProduct = filteredProduct.OrderByDescending(p => p.Price);
+                        break;
+                    case SortBy.rate:
+                        if (Accending) filteredProduct = filteredProduct.OrderBy(p => p.Rates.Average);
+                        else filteredProduct = filteredProduct.OrderByDescending(p => p.Rates.Average);
+                        break;
+                    case SortBy.sale:
+                        if (Accending) filteredProduct = filteredProduct.OrderBy(p => p.Sales);
+                        else filteredProduct = filteredProduct.OrderByDescending(p => p.Sales);
+                        break;
+                    case SortBy.discount:
+                        if (Accending) filteredProduct = filteredProduct.OrderBy(p => p.Discount);
+                        else filteredProduct = filteredProduct.OrderByDescending(p => p.Discount);
+                        break;
+                    default:
+                        break;
+                }
             }
-            switch (currentUser.Role)
-            {
-                case RoleEnum.Admin:
-                    return 1; // admin
-                case RoleEnum.User:
-                    return 0; // user   
-            }
-            return -1; // unknown role
+            if (search != null) filteredProduct = filteredProduct.Where(p =>
+                p.Name.Contains(search) ||
+                p.Description.Contains(search)
+                );
+            if (minPrice != null) filteredProduct = filteredProduct.Where(p => p.Price >= minPrice);
+            if (maxPrice != null) filteredProduct = filteredProduct.Where(p => p.Price <= maxPrice);
+            if (minRate != null) filteredProduct = filteredProduct.Where(p => p.Rates.Average >= minRate);
+            if (minDiscount != null) filteredProduct = filteredProduct.Where(p => p.Discount >= minDiscount);
+            return filteredProduct.ToList();
+
         }
-        public List<Product> GetAllProduct() => _context.Products.ToList();
-        public List<Product> GetByCategory(string category) => _context.Products.Where(p => p.Category.ToString() == category).ToList();
-        public List<Product> Sort(string sortBy, bool isAscending)
-        {
-            switch (sortBy)
-            {
-                case "Price":
-                    return isAscending ? _context.Products.OrderBy(p => p.Price).ToList() : _context.Products.OrderByDescending(p => p.Price).ToList();
-                case "Rate":
-                    return isAscending ? _context.Products.OrderBy(p => p.Rates.Average).ToList() : _context.Products.OrderByDescending(p => p.Rates.Average).ToList();
-                case "Sales":
-                    return isAscending ? _context.Products.OrderBy(p => p.Sales).ToList() : _context.Products.OrderByDescending(p => p.Sales).ToList();
-                default:
-                    return _context.Products.ToList();
-            }
-        }
-        public List<Product> Search(string word) => _context.Products.Where(p => p.Name.Contains(word)).ToList();
-        public List<Product> FilterByPrice(int minPrice, int maxPrice) => _context.Products.Where(p => p.Price >= minPrice && p.Price <= maxPrice).ToList();
+            //currentUser !.Discount
         public Product? GetById(int id) => _context.Products.FirstOrDefault(p => p.ID == id);
         public bool AddToCart(int id)
         {
@@ -141,26 +156,17 @@ namespace MarketApi.Service
             totalPrice *= ((1 - currentDiscountCode.DiscountPrecent) / 100);
             return totalPrice;
         }
-        public User Signup(AddUserDto user)
+        public User Signup(AddUserDto userDto)
         {
-            User newUser = new()
-            {
-                Name = user.Name,
-                Email = user.Email ?? string.Empty,
-                Password = user.Password,
-                phoneNumber = user.PhoneNumber ?? string.Empty
-            };
+            User newUser = _userMapper.ToEntity(userDto);
             _context.Users.Add(newUser);
             _context.SaveChanges();
             return newUser;
         }
-        public string? Login(string Name, string password)
+        public string? Login(LoginUserDto userDto)
         {
-            User? user = _context.Users.FirstOrDefault(u => u.Name == Name && u.Password == password);
-            if (user == null)
-            {
-                return null;
-            }
+            User? user = _context.Users.FirstOrDefault(u => u.Name == userDto.UserName && u.Password == userDto.Password);
+            if (user == null) return null;
             currentUser = user;
             return GenerateJwtToken(user);
         }
@@ -171,17 +177,11 @@ namespace MarketApi.Service
         }
 
 
-        public User? UpdateUser(int id, UpdateUserDto userUp)
+        public User? UpdateUser(UpdateUserDto userUp)
         {
-            User? user = _context.Users.FirstOrDefault(u => u.ID == id);
-            if (user == null)
-            {
-                return null;
-            }
-            user.Name = userUp.Name ?? user.Name;
-            user.Email = userUp.Email ?? user.Email;
-            user.Password = userUp.Password ?? user.Password;
-            user.phoneNumber = userUp.PhoneNumber ?? user.phoneNumber;
+            User? user = _context.Users.FirstOrDefault(u => u.ID == userUp.Id);
+            if (user == null) return null;
+            _userMapper.UpdateEntity(userUp, user);
             _context.SaveChanges();
             return user;
         }
@@ -189,66 +189,45 @@ namespace MarketApi.Service
         // admin methods
 
 
-        public Product AddProduct(AddProductDto product)
+        public Product AddProduct(AddProductDto productDto)
         {
-            Product newProduct = new()
-            {
-                Name = product.Name,
-                Description = product.Description ?? string.Empty,
-                Price = product.Price,
-                Category = product.Category
-            };
-            _context.Products.Add(newProduct);
-            return newProduct;
+            var product = _productMapper.ToEntity(productDto);
+            _context.Products.Add(product);
+            _context.SaveChanges();
+            return product;
         }
-        public Product? UpdateProduct(int id, UpdateProductDto productUp)
+        public Product? UpdateProduct(UpdateProductDto productUp)
         {
-            Product? product = _context.Products.FirstOrDefault(p => p.ID == id);
-            if (product == null)
-            {
-                return null;
-            }
-            product.Name = productUp.Name ?? product.Name;
-            product.Description = productUp.Description ?? product.Description;
-            product.Price = productUp.Price ?? product.Price;
-            product.Category = productUp.Category ?? product.Category;
+            Product? product = _context.Products.FirstOrDefault(p => p.ID == productUp.Id);
+            if (product == null) return null;
+            _productMapper.UpdateEntity(productUp,product);
             _context.SaveChanges();
             return product;
         }
         public bool DeleteProduct(int id)
         {
             Product? product = _context.Products.FirstOrDefault(p => p.ID == id);
-            if (product == null)
-            {
-                return false;
-            }
+            if (product == null) return false;
             _context.Products.Remove(product);
             _context.SaveChanges();
             return true;
         }
         
-        public bool SetDiscountCode(string code, decimal discount)
+        public bool SetDiscountCode(AddDiscountCodeDto Code)
         {
-            DiscountCode discountCode = new()
-            {
-                Code = code,
-                DiscountPrecent = discount
-            };
+            DiscountCode discountCode = _dicountCodeMapper.ToEntity(Code);
             _context.Discounts.Add(discountCode);
             _context.SaveChanges();
             return true;
         }
-        public bool AddToInventory(int id, int quantity, int price)
+        public bool AddToInventory(AddInventoryDto dto)
         {
-            Product? product = _context.Products.FirstOrDefault(p => p.ID == id);
-            if (product == null)
-            {
-                return false;
-            }
+            Product? product = _context.Products.FirstOrDefault(p => p.ID == dto.id);
+            if (product == null) return false;
             InventoryClass inventory = new()
             {
-                Quantity = quantity,
-                Price = price
+                Quantity = dto.quantity,
+                Price = dto.price
             };
             product.Inventory.Add(inventory);
             _context.SaveChanges();
@@ -257,10 +236,7 @@ namespace MarketApi.Service
         public bool DeleteUser(int id)
         {
             User? user = _context.Users.FirstOrDefault(u => u.ID == id);
-            if (user == null)
-            {
-                return false;
-            }
+            if (user == null) return false;
             _context.Users.Remove(user);
             _context.SaveChanges();
             return true;
@@ -268,10 +244,7 @@ namespace MarketApi.Service
         public bool UpgradeUser(int id)
         {
             User? user = _context.Users.FirstOrDefault(u => u.ID == id);
-            if (user == null)
-            {
-                return false;
-            }
+            if (user == null) return false;
             user.Role = RoleEnum.Admin;
             _context.SaveChanges();
             return true;
@@ -310,9 +283,16 @@ namespace MarketApi.Service
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        bool IServices.Login(string Name, string password)
+        public User? UpdateUser(int id, UpdateUserDto user)
         {
             throw new NotImplementedException();
         }
+
+        public Product? UpdateProduct(int id, UpdateProductDto product)
+        {
+            throw new NotImplementedException();
+        }
+
+        
     }
 }

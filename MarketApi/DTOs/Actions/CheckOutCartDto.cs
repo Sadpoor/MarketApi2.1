@@ -6,6 +6,6 @@ namespace MarketApi.DTOs.Cart
     {
         public List<MarketApi.models.Product> ProductsInCart;
         public decimal TotalPrice;
-        public DiscountCode? AppliedDiscountCode;
+        public MarketApi.models.DiscountCode? AppliedDiscountCode;
     }
 }

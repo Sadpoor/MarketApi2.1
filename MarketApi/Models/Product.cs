@@ -10,7 +10,7 @@ namespace MarketApi.models
         [Required] public decimal Price { get; set; }
         [Required] public CategoryEnum Category { get; set; }
         public int Sales { get; set; } = 0;
-        public RateClass? Rates { get; set; } 
+        public RateClass? Rates { get; set; } = new();
         public decimal Discount { get; set; } = 0;
         public List<InventoryClass> Inventory { get; set; } = new();
     }
@@ -28,7 +28,7 @@ namespace MarketApi.models
     {
         public int ID { get; set; }
         public int Number { get; set; } = 0;
-        public float Average { get; set; }
+        public float Average { get; set; } = 0;
     }
 
     public class InventoryClass

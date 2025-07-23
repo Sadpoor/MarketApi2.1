@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MarketApi.Mappers;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<UserMapper>();
+builder.Services.AddScoped<ProductMapper>();
+builder.Services.AddScoped<DiscoutCodeMapper>();
 builder.Services.AddScoped<MarketApi.Service.IServices, MarketApi.Service.Service>();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer("Server=.;Database=MarketDb;Trusted_Connection=True;Encrypt=False"));
