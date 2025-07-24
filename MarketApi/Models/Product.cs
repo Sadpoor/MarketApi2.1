@@ -11,7 +11,7 @@ namespace MarketApi.models
         [Required] public CategoryEnum Category { get; set; }
         public int Sales { get; set; } = 0;
         public RateClass? Rates { get; set; } = new();
-        public decimal Discount { get; set; } = 0;
+        public int DiscountPrecent { get; set; } = 0;
         public List<InventoryClass> Inventory { get; set; } = new();
     }
 

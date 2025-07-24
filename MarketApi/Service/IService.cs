@@ -12,7 +12,7 @@ namespace MarketApi.Service
 {
     public interface IServices
     {
-        List<Product> Products(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscount, bool Accending);
+        List<Product> Products(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending);
         Product? GetById(int id);
         bool AddToCart(int id);
         void EmptyCart();

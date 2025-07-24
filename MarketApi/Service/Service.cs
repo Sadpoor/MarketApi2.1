@@ -42,7 +42,7 @@ namespace MarketApi.Service
             }
             return;
         }
-        public List<Product> Products(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscount, bool Accending=true)
+        public List<Product> Products(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending=true)
         {
             var filteredProduct = _context.Products.AsQueryable();
             if(category!=null) filteredProduct = filteredProduct.Where(p => p.Category == category);
@@ -63,8 +63,8 @@ namespace MarketApi.Service
                         else filteredProduct = filteredProduct.OrderByDescending(p => p.Sales);
                         break;
                     case SortBy.discount:
-                        if (Accending) filteredProduct = filteredProduct.OrderBy(p => p.Discount);
-                        else filteredProduct = filteredProduct.OrderByDescending(p => p.Discount);
+                        if (Accending) filteredProduct = filteredProduct.OrderBy(p => p.DiscountPrecent);
+                        else filteredProduct = filteredProduct.OrderByDescending(p => p.DiscountPrecent);
                         break;
                     default:
                         break;
@@ -77,7 +77,7 @@ namespace MarketApi.Service
             if (minPrice != null) filteredProduct = filteredProduct.Where(p => p.Price >= minPrice);
             if (maxPrice != null) filteredProduct = filteredProduct.Where(p => p.Price <= maxPrice);
             if (minRate != null) filteredProduct = filteredProduct.Where(p => p.Rates.Average >= minRate);
-            if (minDiscount != null) filteredProduct = filteredProduct.Where(p => p.Discount >= minDiscount);
+            if (minDiscountPrecent != null) filteredProduct = filteredProduct.Where(p => p.DiscountPrecent >= minDiscountPrecent);
             return filteredProduct.ToList();
 
         }
@@ -150,7 +150,7 @@ namespace MarketApi.Service
             decimal totalPrice = 0;
             foreach (var product in currentUser!.cart)
             {
-                totalPrice += (product.Price * (1 - product.Discount));
+                totalPrice += (product.Price * (1 - product.DiscountPrecent/100));
             }
             if (currentDiscountCode == null) return totalPrice;
             totalPrice *= ((1 - currentDiscountCode.DiscountPrecent) / 100);

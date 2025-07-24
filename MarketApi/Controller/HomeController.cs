@@ -1,6 +1,5 @@
 ﻿using MarketApi.DTOs.Product;
 using MarketApi.DTOs.User;
-using MarketApi.DTOs.Cart;
 using MarketApi.models;
 using MarketApi.Service;
 using Microsoft.AspNetCore.Mvc;
@@ -23,9 +22,9 @@ namespace MarketApi.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult GetProduct([FromQuery] CategoryEnum? category, SortBy? sortBy, bool Accending, string? search, int? minPrice, int? maxPrice, [Range(0, 5)] int? minRate, int? minDiscount)
+        public IActionResult GetProduct([FromQuery] CategoryEnum? category, SortBy? sortBy, bool Accending, string? search, int? minPrice, int? maxPrice, [Range(0, 5)] int? minRate, int? minDiscountPrecent)
         {
-            return Ok(_service.Products(category, sortBy, search, minPrice, maxPrice, minRate, minDiscount,Accending));  
+            return Ok(_service.Products(category, sortBy, search, minPrice, maxPrice, minRate, minDiscountPrecent,Accending));  
         }
 
         
