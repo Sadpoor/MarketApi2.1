@@ -1,6 +1,4 @@
-﻿using MarketApi.models;
-
-namespace MarketApi.DTOs.Cart
+﻿namespace MarketApi.DTOs.Cart
 {
     public class CheckOutCartDto
     {

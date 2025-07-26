@@ -1,12 +1,10 @@
-﻿using MarketApi.DTOs.Product;
+﻿using MarketApi.DTOs.DiscountCode;
+using MarketApi.DTOs.Product;
 using MarketApi.DTOs.User;
 using MarketApi.models;
 using MarketApi.Service;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-
-using System.ComponentModel.DataAnnotations;
-using MarketApi.DTOs.DiscountCode;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MarketApi.Controllers
 {
@@ -20,85 +18,117 @@ namespace MarketApi.Controllers
             _service = service;
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPatch("UpdateUser")]
-        public IActionResult UpdateUser([FromBody] UpdateUserDto user)
-        { 
-            var updatedUser = _service.UpdateUser(user);
-            return Ok(updatedUser);
-        }
+        
 
         [Authorize(Roles = "Admin")]
         [HttpPost("AddProduct")]
-        public IActionResult AddProduct([FromBody] AddProductDto product)
+        public async Task<IActionResult> AddProductAsync([FromBody] AddProductDto product)
         {
 
-            var newProduct = _service.AddProduct(product);
+            var newProduct = await _service.AddProductAsync(product);
+            if (newProduct == null)
+            {
+                return BadRequest("Failed to add product.");
+            }
             return Ok(newProduct);
         }
-        
+
         [Authorize(Roles = "Admin")]
         [HttpPatch("UpdateProduct")]
-        public IActionResult UpdateProduct([FromBody] UpdateProductDto product)
+        public async Task<IActionResult> UpdateProductAsync([FromBody] UpdateProductDto product)
         {
-            var updatedProduct = _service.UpdateProduct(product);
+            var updatedProduct = await _service.UpdateProductAsync(product);
+            if (updatedProduct == null)
+            {
+                return BadRequest("Failed to update product.");
+            }
             return Ok(updatedProduct);
         }
-        
+
         [Authorize(Roles = "Admin")]
         [HttpPost("DeleteProduct")]
-        public IActionResult DeleteProduct(int id)
+        public async Task<IActionResult> DeleteProduct(int id)
         {
-            var deletedProduct = _service.DeleteProduct(id);
-            return Ok(deletedProduct);
+            var deletedProduct = await _service.DeleteProductAsync(id);
+            if (!deletedProduct)
+            {
+                return BadRequest("Failed to delete product.");
+            }
+            return Ok();
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPost("SetDiscountCode")]
-        public IActionResult SetDiscountCode([FromBody] AddDiscountCodeDto Code)
-        { 
-            return Ok(_service.SetDiscountCode(Code));
+        public async Task<IActionResult> SetDiscountCode([FromBody] AddDiscountCodeDto Code)
+        {
+            var result = await _service.SetDiscountCodeAsync(Code);
+            if (!result)
+            {
+                return BadRequest("Failed to set discount code.");
+            }
+            return Ok();
         }
-        
+
         [Authorize(Roles = "Admin")]
         [HttpPost("AddToInventory")]
-        public IActionResult AddToInventory(AddInventoryDto Dto)
+        public async Task<IActionResult> AddToInventory(AddInventoryDto Dto)
         {
-            return Ok(_service.AddToInventory(Dto));
+            var result = await _service.AddToInventoryAsync(Dto);
+            if (!result)
+            {
+                return BadRequest("Failed to add to inventory.");
+            }
+            return Ok();
         }
-        
+
         [Authorize(Roles = "Admin")]
         [HttpPost("DeleteUser")]
-        public IActionResult DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(int id)
         {
-            var deletedUser = _service.DeleteUser(id);
-            return Ok(deletedUser);
+            var deletedUser = await _service.DeleteUserAsync(id);
+            if (!deletedUser)
+            {
+                return BadRequest("Failed to delete user.");
+            }
+            return Ok();
         }
-        
+
         [Authorize(Roles = "Admin")]
         [HttpPost("UpgradeUser")]
-        public IActionResult UpgradeUser(int id)
+        public async Task<IActionResult> UpgradeUser(int id)
         {
-            var upgradedUser = _service.UpgradeUser(id);
-            return Ok(upgradedUser);
+            var upgradedUser = await _service.DeleteUserAsync(id);
+            if (!upgradedUser)
+            {
+                return BadRequest("Failed to upgrade user.");
+            }
+            return Ok();
         }
-        
+
         [Authorize(Roles = "Admin")]
         [HttpPost("DowngradeUser")]
-        public IActionResult DowngradeUser(int id)
+        public async Task<IActionResult> DowngradeUserAsync(int id)
         {
-            var downgradedUser = _service.DowngradeUser(id);
-            return Ok(downgradedUser);
+            var downgradedUser = await _service.DeleteUserAsync(id);
+            if (!downgradedUser)
+            {
+                return BadRequest("Failed to downgrade user.");
+            }
+            return Ok();
         }
-        
+
         [Authorize(Roles = "Admin")]
         [HttpGet("GetAllUsers")]
-        public IActionResult GetAllUsers()
+        public async Task<IActionResult> GetAllUsersAsync()
         {
-            var allUsers = _service.GetAllUsers();
-            return Ok(allUsers);
+            var Users = await _service.GetAllUsersAsync();
+            if (Users == null)
+            {
+                return NotFound("No users found.");
+            }  
+            return Ok(Users);
         }
-        
+
         [Authorize(Roles = "Admin")]
         [HttpPatch("InventoryCheck")]
         public IActionResult InventoryCheck([FromBody] Product product)

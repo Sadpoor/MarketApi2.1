@@ -1,43 +1,44 @@
 ﻿
-using MarketApi.models;
-using System.ComponentModel.DataAnnotations;
-using MarketApi.DTOs.Product;
-using MarketApi.DTOs.User;
 using MarketApi.DTOs.Cart;
 using MarketApi.DTOs.DiscountCode;
-//using MarketApi.DTOs.Actions;
-using Microsoft.AspNetCore.Mvc;
+using MarketApi.DTOs.Product;
+using MarketApi.DTOs.User;
+using MarketApi.models;
+using System.ComponentModel.DataAnnotations;
+
 
 namespace MarketApi.Service
 {
     public interface IServices
     {
-        List<Product> Products(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending);
-        Product? GetById(int id);
-        bool AddToCart(int id);
-        void EmptyCart();
-        CheckOutCartDto Cart();
-        bool EnterDiscountCode(string Code);
-        void Checkout();
-        bool RateProduct(int id, [Range(1, 5)] float rate);
-        decimal TotalPrice();
-        User Signup(AddUserDto userDto);
-        string Login(LoginUserDto userDto);
-        User? UpdateUser(UpdateUserDto user);
-        bool Logout();
+        
+        Task<List<Product>> GetProductsAsync(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending);
+        Task<Product?> findProductAsync(int id);
+        Task<int> AddProductToCartAsync(int productId, int userId);
+        Task<int> EmptyCartAsync(int userID);
+        Task<CheckOutCartDto?> GetCartAsync(int userID);
+        Task<bool?> EnterDiscountCodeAsync(string Code, int userId);
+        Task<bool?> CheckoutAsync(int userId);
+        Task<bool> RateProductAsync(int id, [Range(1, 5)] float rate);
+        decimal TotalPrice(Cart userCart);
+        Task<User> SignupAsync(AddUserDto userDto);
+        Task<string?> LoginAsync(LoginUserDto userDto);
+        Task<User?> UpdateUserAsync(UpdateUserDto user, int userId);
+        //bool Logout();  فعلا نداریم
 
 
 
         //admin
-        Product AddProduct(AddProductDto product);
-        Product? UpdateProduct(UpdateProductDto product);
-        bool DeleteProduct(int Id);
-        bool SetDiscountCode(AddDiscountCodeDto Code);
-        bool AddToInventory(AddInventoryDto dto);
-        bool DeleteUser(int Id);
-        bool UpgradeUser(int id);
-        bool DowngradeUser(int id);
-        List<User> GetAllUsers();
+        Task<User?> findUserAsync(int userID);
+        Task<Product> AddProductAsync(AddProductDto product);
+        Task<Product?> UpdateProductAsync(UpdateProductDto product);
+        Task<bool> DeleteProductAsync(int Id);
+        Task<bool> SetDiscountCodeAsync(AddDiscountCodeDto Code);
+        Task<bool> AddToInventoryAsync(AddInventoryDto dto);
+        Task<bool> DeleteUserAsync(int Id);
+        Task<bool> UpgradeUserAsync(int id);
+        Task<bool> DowngradeUserAsync(int id);
+        Task<List<User>> GetAllUsersAsync();
         void InventoryCheck(Product product);
     }
 }

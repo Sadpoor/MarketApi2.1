@@ -8,7 +8,7 @@ namespace MarketApi.DTOs.Product
         [Required][MinLength(3)] public string Name { get; set; }
         public string? Description { get; set; }
         [Required] public decimal Price { get; set; }
-        [Required] [EnumDataType(typeof(CategoryEnum))]public CategoryEnum Category { get; set; }
+        [Required][EnumDataType(typeof(CategoryEnum))] public CategoryEnum Category { get; set; }
 
         public float? Discount { get; set; } = 0;
     }

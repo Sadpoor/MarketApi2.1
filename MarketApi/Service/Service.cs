@@ -1,29 +1,27 @@
 ﻿using MarketApi.Data;
+using MarketApi.DTOs.Cart;
+using MarketApi.DTOs.DiscountCode;
 using MarketApi.DTOs.Product;
 using MarketApi.DTOs.User;
-using MarketApi.DTOs.Cart;
+using MarketApi.Mappers;
 using MarketApi.models;
-using System.ComponentModel.DataAnnotations;
-using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using MarketApi.Mappers;
-using MarketApi.DTOs.DiscountCode;
-//using MarketApi.DTOs.Actions;
-using System.Linq;
-using Microsoft.EntityFrameworkCore.Storage.Json;
+
 namespace MarketApi.Service
 {
     public class Service : IServices
-    {   
+    {
         private AppDbContext _context;
         private readonly ProductMapper _productMapper;
         private readonly DiscoutCodeMapper _dicountCodeMapper;
         private readonly UserMapper _userMapper;
         private readonly IConfiguration _configuration;
-        public Service(AppDbContext context, IConfiguration configuration, UserMapper userMapper,ProductMapper productMapper,DiscoutCodeMapper discoutCodeMapper)
+        public Service(AppDbContext context, IConfiguration configuration, UserMapper userMapper, ProductMapper productMapper, DiscoutCodeMapper discoutCodeMapper)
         {
             _context = context;
             _configuration = configuration;
@@ -31,8 +29,8 @@ namespace MarketApi.Service
             _productMapper = productMapper;
             _dicountCodeMapper = discoutCodeMapper;
         }
-        User? currentUser = null;
-        DiscountCode? currentDiscountCode = null;
+        //User? currentUser = null;
+        //DiscountCode? currentDiscountCode = null;
 
         public void InventoryCheck(Product product)
         {
@@ -42,10 +40,10 @@ namespace MarketApi.Service
             }
             return;
         }
-        public List<Product> Products(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending=true)
+        public async Task<List<Product>> GetProductsAsync(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending = true)
         {
             var filteredProduct = _context.Products.AsQueryable();
-            if(category!=null) filteredProduct = filteredProduct.Where(p => p.Category == category);
+            if (category != null) filteredProduct = filteredProduct.Where(p => p.Category == category);
             if (sortBy != null)
             {
                 switch (sortBy)
@@ -78,151 +76,199 @@ namespace MarketApi.Service
             if (maxPrice != null) filteredProduct = filteredProduct.Where(p => p.Price <= maxPrice);
             if (minRate != null) filteredProduct = filteredProduct.Where(p => p.Rates.Average >= minRate);
             if (minDiscountPrecent != null) filteredProduct = filteredProduct.Where(p => p.DiscountPrecent >= minDiscountPrecent);
-            return filteredProduct.ToList();
+            return await filteredProduct.ToListAsync();
 
         }
-            //currentUser !.Discount
-        public Product? GetById(int id) => _context.Products.FirstOrDefault(p => p.ID == id);
-        public bool AddToCart(int id)
+        //currentUser !.Discount
+        public async Task<Product?> GetProductByIdAsync(int id) => await _context.Products.FirstOrDefaultAsync(p => p.ID == id);
+        public async Task<int> AddProductToCartAsync(int productId, int userId)
         {
-            Product? product = _context.Products.FirstOrDefault(p => p.ID == id);
-            if (product == null) { return false; }
+            Product? product = await _context.Products.FirstOrDefaultAsync(p => p.ID == productId);
+            if (product == null) 
+            { 
+                return -1; // product not found
+            }
             InventoryCheck(product);
-            if (product.Inventory == null) {return false;}
-            currentUser!.cart.Add(product);
-            _context.SaveChanges();
-            return true;
+            if (product.Inventory == null) 
+            { 
+                return -2; // do not mojood
+            }
+            var user = await findUserAsync(userId);
+            if (user == null)
+            {
+                return -3; //invalid usern in token . may be token expired
+            }
+            user.UserCart.Products.Add(product);
+            await _context.SaveChangesAsync();
+            return 1; //succeed
         }
-        public void EmptyCart()
+        public async Task<int> EmptyCartAsync(int userID)
         {
-            currentUser!.cart.Clear();
-            _context.SaveChanges();
-            return;
+            
+            var user = await findUserAsync(userID);
+            if (user == null)
+            {
+                return -3; //invalid usern in token . may be token expired
+            }
+            user.UserCart.Products.Clear();
+            await _context.SaveChangesAsync();
+            return 1; //succeed
         }
-        public CheckOutCartDto Cart()
+        public async Task<CheckOutCartDto?> GetCartAsync(int userID)
         {
+            var user = await findUserAsync(userID);
+            if (user == null)
+            {
+                return null;
+            }
+            if (user.UserCart.Products.Count == 0)
+            {
+                return null;
+            }
             CheckOutCartDto cartDto = new()
             {
-                ProductsInCart = currentUser!.cart,
-                TotalPrice = TotalPrice(),
-                AppliedDiscountCode = currentDiscountCode
+
+                ProductsInCart = user.UserCart.Products,
+                TotalPrice = TotalPrice(user.UserCart),
+                AppliedDiscountCode = user.UserCart.ApplyedDiscountCode
             };
-            return cartDto ;
+            return cartDto;
         }
-        public bool EnterDiscountCode(string Code)
+        public async Task<bool?> EnterDiscountCodeAsync(string Code,int userId)
         {
-            DiscountCode? discountCode = _context.Discounts.FirstOrDefault(d => d.Code == Code);
+            var user = await findUserAsync(userId);
+            if (user == null)
+            {
+                return null; // in valid user in token
+            }
+            DiscountCode? discountCode = await _context.Discounts.FirstOrDefaultAsync(d => d.Code == Code);
             if (discountCode == null)
             {
-                return false;
+                return false; // invalid discount code
             }
-            currentDiscountCode = discountCode;
+            user.UserCart.ApplyedDiscountCode = discountCode;
+            await _context.SaveChangesAsync();
             return true;
         }
 
-        public void Checkout()
+        public async Task<bool?> CheckoutAsync(int userId)
         {
-            foreach (var product in currentUser!.cart)
+            var user = await findUserAsync(userId);
+            if (user == null)
+            {
+                return null; // invalid user in token
+            }
+            foreach (var product in user.UserCart.Products)
             {
                 product.Inventory[0].Quantity -= 1;
                 product.Sales += 1;
             }
-            _context.SaveChanges();
-            currentUser!.cart.Clear();
-            return;
+            await _context.SaveChangesAsync();
+            user.UserCart.Products.Clear();
+            return true;
         }
 
-        public bool RateProduct(int id, [Range(1, 5)] float rate)
+        public async Task<bool> RateProductAsync(int productId, [Range(1, 5)] float rate)
         {
-            Product? product = _context.Products.FirstOrDefault(p => p.ID == id);
+            Product? product = await findProductAsync(productId);
             if (product == null)
             {
                 return false;
             }
             product.Rates.Number += 1;
             product.Rates.Average = ((product.Rates.Average * (product.Rates.Number - 1)) + rate) / product.Rates.Number;
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
-        public decimal TotalPrice()
+        public decimal TotalPrice(Cart userCart)
         {
-            if (currentUser!.cart.Count == 0) return 0; //if cart is empty return 0
             decimal totalPrice = 0;
-            foreach (var product in currentUser!.cart)
+            foreach (var product in userCart.Products)
             {
-                totalPrice += (product.Price * (1 - product.DiscountPrecent/100));
+                totalPrice += (product.Price * (1 - product.DiscountPrecent / 100));
             }
-            if (currentDiscountCode == null) return totalPrice;
-            totalPrice *= ((1 - currentDiscountCode.DiscountPrecent) / 100);
-            return totalPrice;
+            if (userCart.ApplyedDiscountCode == null)
+            {
+                return totalPrice; //no discountCode
+            }
+            totalPrice *= ((1 - userCart.ApplyedDiscountCode.DiscountPrecent) / 100); // with discount
+            return totalPrice; 
         }
-        public User Signup(AddUserDto userDto)
+        public async Task<User> SignupAsync(AddUserDto userDto)
         {
             User newUser = _userMapper.ToEntity(userDto);
-            _context.Users.Add(newUser);
-            _context.SaveChanges();
+            await _context.Users.AddAsync(newUser);
+            await _context.SaveChangesAsync();
             return newUser;
         }
-        public string? Login(LoginUserDto userDto)
+        public async Task<string?> LoginAsync(LoginUserDto userDto)
         {
-            User? user = _context.Users.FirstOrDefault(u => u.Name == userDto.UserName && u.Password == userDto.Password);
+            User? user = await _context.Users.FirstOrDefaultAsync(u => u.Name == userDto.UserName && u.Password == userDto.Password);
             if (user == null) return null;
-            currentUser = user;
             return GenerateJwtToken(user);
         }
-        public bool Logout()
-        {
-            currentUser = null;
-            return true;
-        }
+        //public bool Logout()   you will logged out after one hour!
+        //{
+        //    currentUser = null;
+        //    return true;
+        //} فعلا نداریم 
 
 
-        public User? UpdateUser(UpdateUserDto userUp)
+        public async Task<User?> UpdateUserAsync(UpdateUserDto userUp, int userId)
         {
-            User? user = _context.Users.FirstOrDefault(u => u.ID == userUp.Id);
-            if (user == null) return null;
+            var user = await findUserAsync(userId);
+            if (user == null)
+            {
+                return null;
+            }
             _userMapper.UpdateEntity(userUp, user);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return user;
         }
 
         // admin methods
 
 
-        public Product AddProduct(AddProductDto productDto)
+        public async Task<Product> AddProductAsync(AddProductDto productDto)
         {
             var product = _productMapper.ToEntity(productDto);
-            _context.Products.Add(product);
-            _context.SaveChanges();
+            await _context.Products.AddAsync(product);
+            await _context.SaveChangesAsync();
             return product;
         }
-        public Product? UpdateProduct(UpdateProductDto productUp)
+        public async Task<Product?> UpdateProductAsync(UpdateProductDto productUp)
         {
-            Product? product = _context.Products.FirstOrDefault(p => p.ID == productUp.Id);
-            if (product == null) return null;
-            _productMapper.UpdateEntity(productUp,product);
-            _context.SaveChanges();
+            Product? product = await findProductAsync(productUp.Id);
+            if (product == null)
+            {
+                return null;
+            }
+            _productMapper.UpdateEntity(productUp, product);
+            await _context.SaveChangesAsync();
             return product;
         }
-        public bool DeleteProduct(int id)
+        public async Task <bool> DeleteProductAsync(int id)
         {
-            Product? product = _context.Products.FirstOrDefault(p => p.ID == id);
-            if (product == null) return false;
+            Product? product = await findProductAsync(id);
+            if (product == null)
+            {
+                return false;
+            }
             _context.Products.Remove(product);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
-        
-        public bool SetDiscountCode(AddDiscountCodeDto Code)
+
+        public async Task<bool> SetDiscountCodeAsync(AddDiscountCodeDto Code)
         {
             DiscountCode discountCode = _dicountCodeMapper.ToEntity(Code);
             _context.Discounts.Add(discountCode);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
-        public bool AddToInventory(AddInventoryDto dto)
+        public async Task<bool> AddToInventoryAsync(AddInventoryDto dto)
         {
-            Product? product = _context.Products.FirstOrDefault(p => p.ID == dto.id);
+            Product? product = await findProductAsync(dto.id);
             if (product == null) return false;
             InventoryClass inventory = new()
             {
@@ -230,47 +276,64 @@ namespace MarketApi.Service
                 Price = dto.price
             };
             product.Inventory.Add(inventory);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
-        public bool DeleteUser(int id)
+        public async Task<bool> DeleteUserAsync(int id)
         {
-            User? user = _context.Users.FirstOrDefault(u => u.ID == id);
-            if (user == null) return false;
+            User? user = await findUserAsync(id);
+            if (user == null)
+            {
+                return false;
+            }
             _context.Users.Remove(user);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
-        public bool UpgradeUser(int id)
+        public async Task<bool> UpgradeUserAsync(int id)
         {
-            User? user = _context.Users.FirstOrDefault(u => u.ID == id);
-            if (user == null) return false;
+            User? user = await findUserAsync(id);
+            if (user == null)
+            {
+                return false;
+            }
             user.Role = RoleEnum.Admin;
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
-        public bool DowngradeUser(int id)
+        public async Task<bool> DowngradeUserAsync(int id)
         {
-            User? user = _context.Users.FirstOrDefault(u => u.ID == id);
+            User? user = await findUserAsync(id);
             if (user == null)
             {
                 return false;
             }
             user.Role = RoleEnum.User;
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return true;
         }
-        public List<User> GetAllUsers() => _context.Users.ToList();
+        public async Task<User?> findUserAsync(int userID)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.ID == userID);
+            return user;
+        }
+
+        public async Task<Product?> findProductAsync(int productId)
+        {
+            var product = await _context.Products.FirstOrDefaultAsync(u => u.ID == productId);
+            return product;
+        }
+
+        public async Task<List<User>> GetAllUsersAsync() => await _context.Users.ToListAsync();
 
         private string GenerateJwtToken(User user)
         {
             var jwtSettings = _configuration.GetSection("Jwt");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var claims = new[]
+            var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.ID.ToString()),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.Name),
+                new Claim(ClaimTypes.NameIdentifier, user.ID.ToString()),
                 new Claim(ClaimTypes.Role, user.Role.ToString())
             };
             var token = new JwtSecurityToken(
@@ -283,16 +346,8 @@ namespace MarketApi.Service
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public User? UpdateUser(int id, UpdateUserDto user)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Product? UpdateProduct(int id, UpdateProductDto product)
-        {
-            throw new NotImplementedException();
-        }
 
         
     }
+
 }

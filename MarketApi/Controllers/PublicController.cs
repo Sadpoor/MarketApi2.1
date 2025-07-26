@@ -18,33 +18,33 @@ namespace MarketApi.Controllers
         }
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult GetProduct([FromQuery] CategoryEnum? category, SortBy? sortBy, bool Accending, string? search, int? minPrice, int? maxPrice, [Range(0, 5)] int? minRate, int? minDiscountPrecent)
+        public async Task<IActionResult> GetProduct([FromQuery] CategoryEnum? category, SortBy? sortBy, bool Accending, string? search, int? minPrice, int? maxPrice, [Range(0, 5)] int? minRate, int? minDiscountPrecent)
         {
-            return Ok(_service.Products(category, sortBy, search, minPrice, maxPrice, minRate, minDiscountPrecent, Accending));
+            return Ok(await _service.GetProductsAsync(category, sortBy, search, minPrice, maxPrice, minRate, minDiscountPrecent, Accending));
         }
 
 
         [HttpGet("GetById/{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var product = _service.GetById(id);
+            var product = await _service.findProductAsync(id);
             if (product == null) return NotFound();
             return Ok(product);
         }
 
         [AllowAnonymous]
         [HttpPatch("Signup")]
-        public IActionResult Signup([FromBody] AddUserDto user)
+        public async Task<IActionResult> LoginAsync([FromBody] AddUserDto user)
         {
-            var newUser = _service.Signup(user);
+            var newUser = await _service.SignupAsync(user);
             return Ok(newUser);
         }
 
         [AllowAnonymous]
         [HttpPost("Login")]
-        public IActionResult Login([FromBody] LoginUserDto user)
+        public async Task<IActionResult> LoginAsync([FromBody] LoginUserDto user)
         {
-            var token = _service.Login(user);
+            var token = await _service.LoginAsync(user);
             if (string.IsNullOrEmpty(token)) return Unauthorized("Invalid username or password.");
             return Ok(new { token });
         }

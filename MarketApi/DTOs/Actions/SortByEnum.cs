@@ -1,6 +1,4 @@
-﻿using Microsoft.IdentityModel.Tokens;
-
-public enum SortBy
+﻿public enum SortBy
 {
     price,
     rate,

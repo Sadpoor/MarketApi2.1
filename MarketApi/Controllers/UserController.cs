@@ -3,7 +3,7 @@ using MarketApi.models;
 using MarketApi.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace MarketApi.Controllers
 {
@@ -19,70 +19,97 @@ namespace MarketApi.Controllers
 
         [Authorize(Roles = "User")]
         [HttpPost("AddToCart/{id}")]
-        public IActionResult AddToCart(int id)
+        public async Task<IActionResult> AddProductToCartAsync(int productId)
         {
-            var product = _service.GetById(id);
-            if (product == null) return NotFound();
-            var result = _service.AddToCart(id);
+            var product = await _service.findProductAsync(productId);
+            if (product == null)
+            {
+                return NotFound("Product not found");
+            }
+            var userId = GetUserIdFromToken();
+            if (userId == -1)
+            {
+                return Unauthorized("Cannot decode token and find ID");
+            }
+            var result = await _service.AddProductToCartAsync(productId, userId);
             return Ok(result);
         }
 
         [Authorize(Roles = "User")]
         [HttpPost("EmptyCart")]
-        public IActionResult EmptyCart()
+        public async Task<IActionResult> EmptyCartAsync()
         {
-            _service.EmptyCart();
+            var userId = GetUserIdFromToken();
+            if (userId == -1)
+            {
+                return Unauthorized("Cannot decode token and find ID");
+            }
+            await _service.EmptyCartAsync(userId);
             return Ok("Cart emptied successfully.");
         }
 
         [Authorize(Roles = "User")]
         [HttpGet("Cart")]
-        public IActionResult Cart()
+        public async Task<IActionResult> GetCartAsync()
         {
-            var cartItems = _service.Cart();
+            var userId = GetUserIdFromToken();
+            var cartItems = await _service.GetCartAsync(userId);
             return Ok(cartItems);
         }
 
         [Authorize(Roles = "User")]
         [HttpPost("EnterDiscountCode")]
-        public IActionResult EnterDiscountCode([FromBody] string code)
+        public async Task<IActionResult> EnterDiscountCodeAsync([FromBody] string code)
         {
-            bool isValid = _service.EnterDiscountCode(code);
-            if (!isValid) return BadRequest("Invalid discount code.");
+            var userId = GetUserIdFromToken();
+            bool? isValid = await _service.EnterDiscountCodeAsync(code,userId);
+            if(isValid == null) return BadRequest("invalid user in token");
+            if (isValid==false) return BadRequest("Invalid discount code.");
             return Ok("Discount code applied successfully.");
         }
 
         [Authorize(Roles = "User")]
         [HttpGet("Checkout")]
-        public IActionResult Checkout()
+        public async Task<IActionResult> Checkout()
         {
-            _service.Checkout();
+            var userId = GetUserIdFromToken();
+            await _service.CheckoutAsync(userId);
             return Ok();
         }
 
         [Authorize(Roles = "User")]
         [HttpPost("RateProduct")]
-        public IActionResult RateProduct(int id, float rate)
+        public async Task<IActionResult> RateProduct(int productId, float rate)
         {
-            var message = _service.RateProduct(id, rate);
-            return Ok(message);
+            var message = await _service.RateProductAsync(productId, rate);
+            if (!message)
+            {
+                return BadRequest();
+            }
+            return Ok(message);//باید اضافه شود که هرکس فقط بتواند یکبار نظر دهد
         }
 
-        //[Authorize(Roles = "User")]
-        //[HttpPost("TotalPrice")]
-        //public IActionResult ()
-        //{
-        //    var totalPrice = _service.TotalPrice();
-        //    return Ok(totalPrice);
-        //}
-
-  
-        [Authorize]
-        [HttpPost("Logout")]
-        public IActionResult Logout()
+        public int GetUserIdFromToken()
         {
-            _service.Logout();
-            return Ok();
+            var userIdToken = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            bool success = int.TryParse(userIdToken, out int userId);
+            if (!success)
+            {
+                return -1;
+            }
+            return userId;
+        }
+        [Authorize(Roles = "User")]
+        [HttpPatch("UpdateUser")]
+        public async Task<IActionResult> UpdateUserAsync([FromBody] UpdateUserDto userDto)
+        {
+            var userId = GetUserIdFromToken();
+            var updatedUser = await _service.UpdateUserAsync(userDto,userId);
+            if (updatedUser == null)
+            {
+                return BadRequest("Failed to update user.");
+            }
+            return Ok(updatedUser);
         }
     }
 }
