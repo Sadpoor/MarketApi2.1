@@ -191,7 +191,7 @@ namespace MarketApi.Service
             {
                 return totalPrice; //no discountCode
             }
-            totalPrice *= ((1 - userCart.ApplyedDiscountCode.DiscountPrecent) / 100); // with discount
+            totalPrice *= (1 - ((userCart.ApplyedDiscountCode.DiscountPrecent) / 100)); // with discount
             return totalPrice; 
         }
         public async Task<User> SignupAsync(AddUserDto userDto)

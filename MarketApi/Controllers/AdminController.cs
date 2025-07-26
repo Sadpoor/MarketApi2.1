@@ -97,7 +97,7 @@ namespace MarketApi.Controllers
         [HttpPost("UpgradeUser")]
         public async Task<IActionResult> UpgradeUser(int id)
         {
-            var upgradedUser = await _service.DeleteUserAsync(id);
+            var upgradedUser = await _service.UpgradeUserAsync(id);
             if (!upgradedUser)
             {
                 return BadRequest("Failed to upgrade user.");
@@ -109,7 +109,7 @@ namespace MarketApi.Controllers
         [HttpPost("DowngradeUser")]
         public async Task<IActionResult> DowngradeUserAsync(int id)
         {
-            var downgradedUser = await _service.DeleteUserAsync(id);
+            var downgradedUser = await _service.DowngradeUserAsync(id);
             if (!downgradedUser)
             {
                 return BadRequest("Failed to downgrade user.");
