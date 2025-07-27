@@ -46,7 +46,7 @@ namespace MarketApi.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("DeleteProduct")]
+        [HttpDelete("DeleteProduct")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             var deletedProduct = await _service.DeleteProductAsync(id);

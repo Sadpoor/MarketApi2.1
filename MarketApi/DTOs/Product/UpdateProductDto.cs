@@ -11,6 +11,6 @@ namespace MarketApi.DTOs.Product
         public decimal? Price { get; set; }
         public CategoryEnum? Category { get; set; }
 
-        public float? Discount { get; set; }
+        public int? DiscountPrecent { get; set; }
     }
 }

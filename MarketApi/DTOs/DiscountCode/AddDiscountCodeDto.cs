@@ -2,7 +2,7 @@
 {
     public class AddDiscountCodeDto
     {
-        public string CodeText { get; set; }
-        public decimal DiscountPrecent { get; set; }
+        public string Code { get; set; }
+        public int DiscountPrecent { get; set; }
     }
 }

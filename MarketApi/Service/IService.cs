@@ -11,7 +11,8 @@ namespace MarketApi.Service
 {
     public interface IServices
     {
-        
+
+        bool seedData();
         Task<List<Product>> GetProductsAsync(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending);
         Task<Product?> findProductAsync(int id);
         Task<int> AddProductToCartAsync(int productId, int userId);

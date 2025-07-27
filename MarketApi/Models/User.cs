@@ -10,7 +10,7 @@ namespace MarketApi.models
         public string Name { get; set; }
         [Phone] public string? PhoneNumber { get; set; }
         [EmailAddress] public string? Email { get; set; }
-        public RoleEnum Role { get; set; }
+        public RoleEnum Role { get; set; } = RoleEnum.User;
         public Cart UserCart { get; set; } = new();
 
     }
@@ -23,6 +23,7 @@ namespace MarketApi.models
 
     public class Cart
     {
+        [Key] public int ID { get; set; }
         public List<Product> Products = new();
         public DiscountCode? ApplyedDiscountCode { get; set; } = null;
     }

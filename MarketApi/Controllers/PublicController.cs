@@ -16,6 +16,15 @@ namespace MarketApi.Controllers
         {
             _service = service;
         }
+
+        [HttpGet("aii")]
+        [AllowAnonymous]
+        public IActionResult seedData()
+        {
+            var result = _service.seedData();
+            return Ok(result);
+        }
+
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetProduct([FromQuery] CategoryEnum? category, SortBy? sortBy, bool Accending, string? search, int? minPrice, int? maxPrice, [Range(0, 5)] int? minRate, int? minDiscountPrecent)
@@ -33,8 +42,8 @@ namespace MarketApi.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPatch("Signup")]
-        public async Task<IActionResult> LoginAsync([FromBody] AddUserDto user)
+        [HttpPost("Signup")]
+        public async Task<IActionResult> SignupAsync([FromBody] AddUserDto user)
         {
             var newUser = await _service.SignupAsync(user);
             return Ok(newUser);

@@ -18,7 +18,7 @@ namespace MarketApi.Controllers
         }
 
         [Authorize(Roles = "User")]
-        [HttpPost("AddToCart/{id}")]
+        [HttpPost("AddToCart")]
         public async Task<IActionResult> AddProductToCartAsync(int productId)
         {
             var product = await _service.findProductAsync(productId);

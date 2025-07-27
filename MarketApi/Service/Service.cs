@@ -6,6 +6,7 @@ using MarketApi.DTOs.User;
 using MarketApi.Mappers;
 using MarketApi.models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
@@ -40,6 +41,20 @@ namespace MarketApi.Service
             }
             return;
         }
+        public bool seedData() { 
+      
+            User ali = new() { Name = "ali", Email = "mor@gmail.com", Password = "123456789", PhoneNumber = "09028648986" };
+            _context.Users.Add(ali);
+            User morteza = new() { Name = "morteza", Email = "morteza.sad85@gmail.com", Role = RoleEnum.Admin, Password = "123456789", PhoneNumber = "09203695741" };
+            _context.Users.Add(morteza);
+            Product tv = new() { Name = "tv", Category = CategoryEnum.TV, Description = "bla bla bla", DiscountPrecent = 10, Price = 1000, Sales = 5 };
+            _context.Products.Add(tv);
+            Product charger = new() { Name = "charger", Category = CategoryEnum.Accessory, Price = 1000, DiscountPrecent = 50, Description = "npt bad" };
+            _context.Products.Add(charger);
+            _context.SaveChanges();
+            return true;       
+        }
+        
         public async Task<List<Product>> GetProductsAsync(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending = true)
         {
             var filteredProduct = _context.Products.AsQueryable();
