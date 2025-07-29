@@ -3,8 +3,10 @@ using MarketApi.DTOs.Cart;
 using MarketApi.DTOs.DiscountCode;
 using MarketApi.DTOs.Product;
 using MarketApi.DTOs.User;
-using MarketApi.models;
+using MarketApi.Models.Users;
+using MarketApi.Models.Products;
 using System.ComponentModel.DataAnnotations;
+using MarketApi.DTOs.Actions;
 
 
 namespace MarketApi.Service
@@ -12,7 +14,6 @@ namespace MarketApi.Service
     public interface IServices
     {
 
-        bool seedData();
         Task<List<Product>> GetProductsAsync(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending);
         Task<Product?> findProductAsync(int id);
         Task<int> AddProductToCartAsync(int productId, int userId);
@@ -20,7 +21,7 @@ namespace MarketApi.Service
         Task<CheckOutCartDto?> GetCartAsync(int userID);
         Task<bool?> EnterDiscountCodeAsync(string Code, int userId);
         Task<bool?> CheckoutAsync(int userId);
-        Task<bool> RateProductAsync(int id, [Range(1, 5)] float rate);
+        Task<bool> RateProductAsync(RateProductDto dto);
         decimal TotalPrice(Cart userCart);
         Task<User> SignupAsync(AddUserDto userDto);
         Task<string?> LoginAsync(LoginUserDto userDto);
@@ -40,6 +41,6 @@ namespace MarketApi.Service
         Task<bool> UpgradeUserAsync(int id);
         Task<bool> DowngradeUserAsync(int id);
         Task<List<User>> GetAllUsersAsync();
-        void InventoryCheck(Product product);
+
     }
 }

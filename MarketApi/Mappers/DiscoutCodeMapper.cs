@@ -1,5 +1,5 @@
 ﻿using MarketApi.DTOs.DiscountCode;
-using MarketApi.models;
+using MarketApi.Models.DiscountCode;
 using Riok.Mapperly.Abstractions;
 
 

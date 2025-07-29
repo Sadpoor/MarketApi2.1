@@ -1,4 +1,4 @@
-﻿using MarketApi.models;
+﻿using MarketApi.Models.Products;
 using System.ComponentModel.DataAnnotations;
 
 namespace MarketApi.DTOs.Product

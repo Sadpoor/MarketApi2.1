@@ -1,7 +1,7 @@
 ﻿using MarketApi.DTOs.DiscountCode;
 using MarketApi.DTOs.Product;
 using MarketApi.DTOs.User;
-using MarketApi.models;
+using MarketApi.Models.DiscountCode;
 using MarketApi.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -129,12 +129,6 @@ namespace MarketApi.Controllers
             return Ok(Users);
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPatch("InventoryCheck")]
-        public IActionResult InventoryCheck([FromBody] Product product)
-        {
-            _service.InventoryCheck(product);
-            return Ok();
-        }
+       
     }
 }

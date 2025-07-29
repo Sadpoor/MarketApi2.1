@@ -1,9 +1,11 @@
-﻿namespace MarketApi.DTOs.Cart
+﻿using ali = MarketApi.Models.Products;
+using ali2 =MarketApi.Models.DiscountCode; // that is the worse way but i must do it 
+namespace MarketApi.DTOs.Cart
 {
     public class CheckOutCartDto
     {
-        public List<MarketApi.models.Product> ProductsInCart;
+        public List<ali.Product> ProductsInCart;
         public decimal TotalPrice;
-        public MarketApi.models.DiscountCode? AppliedDiscountCode;
+        public ali2.DiscountCode? AppliedDiscountCode;
     }
 }

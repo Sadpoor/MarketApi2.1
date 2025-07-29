@@ -1,5 +1,5 @@
 ﻿using MarketApi.DTOs.User;
-using MarketApi.models;
+using MarketApi.Models.Users;
 using Riok.Mapperly.Abstractions;
 
 namespace MarketApi.Mappers;

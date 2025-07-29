@@ -1,5 +1,6 @@
 ﻿using MarketApi.DTOs.User;
-using MarketApi.models;
+//using MarketApi.models;
+using MarketApi.Models.Products;
 using MarketApi.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,14 +16,6 @@ namespace MarketApi.Controllers
         public PublicController(IServices service)
         {
             _service = service;
-        }
-
-        [HttpGet("aii")]
-        [AllowAnonymous]
-        public IActionResult seedData()
-        {
-            var result = _service.seedData();
-            return Ok(result);
         }
 
         [HttpGet]

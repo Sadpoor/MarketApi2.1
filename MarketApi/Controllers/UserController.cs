@@ -1,5 +1,6 @@
-﻿using MarketApi.DTOs.User;
-using MarketApi.models;
+﻿using MarketApi.DTOs.Actions;
+using MarketApi.DTOs.User;
+using MarketApi.Models.DiscountCode;
 using MarketApi.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -79,9 +80,9 @@ namespace MarketApi.Controllers
 
         [Authorize(Roles = "User")]
         [HttpPost("RateProduct")]
-        public async Task<IActionResult> RateProduct(int productId, float rate)
+        public async Task<IActionResult> RateProduct([FromBody] RateProductDto dto)
         {
-            var message = await _service.RateProductAsync(productId, rate);
+            var message = await _service.RateProductAsync(dto);
             if (!message)
             {
                 return BadRequest();

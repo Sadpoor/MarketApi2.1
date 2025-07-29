@@ -1,4 +1,4 @@
-using MarketApi.Data;
+using MarketApi.Data.MarketDb;
 using MarketApi.Mappers;
 //using Microsoft.Extensions.DependencyInjection;
 //using Microsoft.Extensions.Hosting;
@@ -19,7 +19,7 @@ builder.Services.AddScoped<UserMapper>();
 builder.Services.AddScoped<ProductMapper>();
 builder.Services.AddScoped<DiscoutCodeMapper>();
 builder.Services.AddScoped<MarketApi.Service.IServices, MarketApi.Service.Service>();
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<MarketDb>(options =>
     options.UseSqlServer("Server=.;Database=MarketDb;Trusted_Connection=True;Encrypt=False"));
 
 // JWT Authentication configuration

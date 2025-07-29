@@ -1,12 +1,16 @@
-﻿using MarketApi.Data;
+﻿
+using MarketApi.Data.MarketDb;
+using MarketApi.DTOs.Actions;
 using MarketApi.DTOs.Cart;
 using MarketApi.DTOs.DiscountCode;
 using MarketApi.DTOs.Product;
 using MarketApi.DTOs.User;
 using MarketApi.Mappers;
-using MarketApi.models;
+using MarketApi.Models.DiscountCode;
+using MarketApi.Models.Products;
+using MarketApi.Models.Rating;
+using MarketApi.Models.Users;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
@@ -17,12 +21,12 @@ namespace MarketApi.Service
 {
     public class Service : IServices
     {
-        private AppDbContext _context;
+        private MarketDb _context;
         private readonly ProductMapper _productMapper;
         private readonly DiscoutCodeMapper _dicountCodeMapper;
         private readonly UserMapper _userMapper;
         private readonly IConfiguration _configuration;
-        public Service(AppDbContext context, IConfiguration configuration, UserMapper userMapper, ProductMapper productMapper, DiscoutCodeMapper discoutCodeMapper)
+        public Service(MarketDb context, IConfiguration configuration, UserMapper userMapper, ProductMapper productMapper, DiscoutCodeMapper discoutCodeMapper)
         {
             _context = context;
             _configuration = configuration;
@@ -30,31 +34,7 @@ namespace MarketApi.Service
             _productMapper = productMapper;
             _dicountCodeMapper = discoutCodeMapper;
         }
-        //User? currentUser = null;
-        //DiscountCode? currentDiscountCode = null;
-
-        public void InventoryCheck(Product product)
-        {
-            if (product.Inventory != null && product.Inventory[0].Quantity == 0)
-            {
-                product.Inventory.RemoveAt(0);
-            }
-            return;
-        }
-        public bool seedData() { 
-      
-            User ali = new() { Name = "ali", Email = "mor@gmail.com", Password = "123456789", PhoneNumber = "09028648986" };
-            _context.Users.Add(ali);
-            User morteza = new() { Name = "morteza", Email = "morteza.sad85@gmail.com", Role = RoleEnum.Admin, Password = "123456789", PhoneNumber = "09203695741" };
-            _context.Users.Add(morteza);
-            Product tv = new() { Name = "tv", Category = CategoryEnum.TV, Description = "bla bla bla", DiscountPrecent = 10, Price = 1000, Sales = 5 };
-            _context.Products.Add(tv);
-            Product charger = new() { Name = "charger", Category = CategoryEnum.Accessory, Price = 1000, DiscountPrecent = 50, Description = "npt bad" };
-            _context.Products.Add(charger);
-            _context.SaveChanges();
-            return true;       
-        }
-        
+     
         public async Task<List<Product>> GetProductsAsync(CategoryEnum? category, SortBy? sortBy, string? search, int? minPrice, int? maxPrice, int? minRate, int? minDiscountPrecent, bool Accending = true)
         {
             var filteredProduct = _context.Products.AsQueryable();
@@ -68,8 +48,8 @@ namespace MarketApi.Service
                         else filteredProduct = filteredProduct.OrderByDescending(p => p.Price);
                         break;
                     case SortBy.rate:
-                        if (Accending) filteredProduct = filteredProduct.OrderBy(p => p.Rates.Average);
-                        else filteredProduct = filteredProduct.OrderByDescending(p => p.Rates.Average);
+                        if (Accending) filteredProduct = filteredProduct.OrderBy(p => p.Rate.Average);
+                        else filteredProduct = filteredProduct.OrderByDescending(p => p.Rate.Average);
                         break;
                     case SortBy.sale:
                         if (Accending) filteredProduct = filteredProduct.OrderBy(p => p.Sales);
@@ -89,7 +69,7 @@ namespace MarketApi.Service
                 );
             if (minPrice != null) filteredProduct = filteredProduct.Where(p => p.Price >= minPrice);
             if (maxPrice != null) filteredProduct = filteredProduct.Where(p => p.Price <= maxPrice);
-            if (minRate != null) filteredProduct = filteredProduct.Where(p => p.Rates.Average >= minRate);
+            if (minRate != null) filteredProduct = filteredProduct.Where(p => p.Rate.Average >= minRate);
             if (minDiscountPrecent != null) filteredProduct = filteredProduct.Where(p => p.DiscountPrecent >= minDiscountPrecent);
             return await filteredProduct.ToListAsync();
 
@@ -103,8 +83,8 @@ namespace MarketApi.Service
             { 
                 return -1; // product not found
             }
-            InventoryCheck(product);
-            if (product.Inventory == null) 
+            var inventory= product.Quantity;
+            if (inventory == 0) 
             { 
                 return -2; // do not mojood
             }
@@ -175,7 +155,7 @@ namespace MarketApi.Service
             }
             foreach (var product in user.UserCart.Products)
             {
-                product.Inventory[0].Quantity -= 1;
+                product.Quantity -= 1;
                 product.Sales += 1;
             }
             await _context.SaveChangesAsync();
@@ -183,15 +163,25 @@ namespace MarketApi.Service
             return true;
         }
 
-        public async Task<bool> RateProductAsync(int productId, [Range(1, 5)] float rate)
+        public async Task<bool> RateProductAsync(RateProductDto dto)
         {
-            Product? product = await findProductAsync(productId);
+            Product? product = await findProductAsync(dto.ProductID);
             if (product == null)
             {
                 return false;
             }
-            product.Rates.Number += 1;
-            product.Rates.Average = ((product.Rates.Average * (product.Rates.Number - 1)) + rate) / product.Rates.Number;
+            CustomerRate newRate= new(){
+                Rate = dto.Rate,
+                Discription = dto.Discription 
+            };
+
+            product.Rate.Rates.Add(newRate);
+            product.Rate.Number += 1;
+            product.Rate.Average = ((product.Rate.Average * (product.Rate.Number - 1)) + dto.Rate) / product.Rate.Number;
+
+            var user = await findUserAsync(dto.UserID);
+            user.Rates.Add(newRate);
+
             await _context.SaveChangesAsync();
             return true;
         }
@@ -218,7 +208,7 @@ namespace MarketApi.Service
         }
         public async Task<string?> LoginAsync(LoginUserDto userDto)
         {
-            User? user = await _context.Users.FirstOrDefaultAsync(u => u.Name == userDto.UserName && u.Password == userDto.Password);
+            User? user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == userDto.PhoneNumber && u.Password == userDto.Password);
             if (user == null) return null;
             return GenerateJwtToken(user);
         }
@@ -285,12 +275,8 @@ namespace MarketApi.Service
         {
             Product? product = await findProductAsync(dto.id);
             if (product == null) return false;
-            InventoryClass inventory = new()
-            {
-                Quantity = dto.quantity,
-                Price = dto.price
-            };
-            product.Inventory.Add(inventory);
+            product.Price = dto.price;
+            product.Quantity = dto.quantity;
             await _context.SaveChangesAsync();
             return true;
         }
@@ -361,8 +347,7 @@ namespace MarketApi.Service
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-
-        
+      
     }
 
 }
