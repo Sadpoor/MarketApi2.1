@@ -21,7 +21,7 @@ namespace MarketApi.Service
         Task<CheckOutCartDto?> GetCartAsync(int userID);
         Task<bool?> EnterDiscountCodeAsync(string Code, int userId);
         Task<bool?> CheckoutAsync(int userId);
-        Task<bool> RateProductAsync(RateProductDto dto);
+        Task<bool?> RateProductAsync(RateProductDto dto);
         decimal TotalPrice(Cart userCart);
         Task<User> SignupAsync(AddUserDto userDto);
         Task<string?> LoginAsync(LoginUserDto userDto);

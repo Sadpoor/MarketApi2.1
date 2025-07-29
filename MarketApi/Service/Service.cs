@@ -163,7 +163,7 @@ namespace MarketApi.Service
             return true;
         }
 
-        public async Task<bool> RateProductAsync(RateProductDto dto)
+        public async Task<bool?> RateProductAsync(RateProductDto dto)
         {
             Product? product = await findProductAsync(dto.ProductID);
             if (product == null)
@@ -174,12 +174,17 @@ namespace MarketApi.Service
                 Rate = dto.Rate,
                 Discription = dto.Discription 
             };
+            var user = await findUserAsync(dto.UserID);
+            if (user.Rates.Any(p => p.ProductRateID == dto.ProductID))
+            {
+                return null; // user already rated this product
+            }
 
             product.Rate.Rates.Add(newRate);
             product.Rate.Number += 1;
             product.Rate.Average = ((product.Rate.Average * (product.Rate.Number - 1)) + dto.Rate) / product.Rate.Number;
 
-            var user = await findUserAsync(dto.UserID);
+            
             user.Rates.Add(newRate);
 
             await _context.SaveChangesAsync();

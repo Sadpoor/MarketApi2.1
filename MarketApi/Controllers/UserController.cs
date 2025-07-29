@@ -83,9 +83,13 @@ namespace MarketApi.Controllers
         public async Task<IActionResult> RateProduct([FromBody] RateProductDto dto)
         {
             var message = await _service.RateProductAsync(dto);
-            if (!message)
+            if (message == null)
             {
-                return BadRequest();
+                return BadRequest("user already rated this product");
+            }
+            else if (message==false)
+            {
+                return BadRequest("userId in token is invalid");
             }
             return Ok(message);//باید اضافه شود که هرکس فقط بتواند یکبار نظر دهد
         }
