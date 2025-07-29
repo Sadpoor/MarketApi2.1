@@ -14,7 +14,7 @@ namespace MarketApi.Models.Products
 
 
             public int Sales { get; set; } = 0;
-            public ProductRate? Rate { get; set; } = new();
+            public ProductRate? Rate { get; set; }
             public int DiscountPrecent { get; set; } = 0;
 
 

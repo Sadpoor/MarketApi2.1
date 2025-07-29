@@ -1,4 +1,5 @@
 //using MarketApi.Data.SeedData;
+using MarketApi.Data.SeedData;
 using MarketApi.Models.DiscountCode;
 using MarketApi.Models.Products;
 using MarketApi.Models.Rating;
@@ -50,7 +51,9 @@ namespace MarketApi.Data.MarketDb
                     .IsUnique();
             });
 
-            modelBuilder.ApplyConfiguration(new initalDatas());
+            //seedData
+            modelBuilder.ApplyConfiguration(new UserSeedData());
+            modelBuilder.ApplyConfiguration(new ProductSeedData());
 
         }
 
