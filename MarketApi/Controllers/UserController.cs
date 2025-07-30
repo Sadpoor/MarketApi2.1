@@ -1,6 +1,6 @@
 ﻿using MarketApi.DTOs.Actions;
 using MarketApi.DTOs.User;
-using MarketApi.Models.DiscountCode;
+//using MarketApi.Models.DiscountCode;
 using MarketApi.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -94,7 +94,7 @@ namespace MarketApi.Controllers
             return Ok(message);//باید اضافه شود که هرکس فقط بتواند یکبار نظر دهد
         }
 
-        public int GetUserIdFromToken()
+        int GetUserIdFromToken()
         {
             var userIdToken = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             bool success = int.TryParse(userIdToken, out int userId);

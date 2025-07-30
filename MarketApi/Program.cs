@@ -1,4 +1,4 @@
-using MarketApi.Data.MarketDb;
+﻿using MarketApi.Data.MarketDb;
 using MarketApi.Mappers;
 //using Microsoft.Extensions.DependencyInjection;
 //using Microsoft.Extensions.Hosting;
@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 //using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using Serilog.Events;
 using System.Text;
 
 
@@ -21,6 +23,29 @@ builder.Services.AddScoped<DiscoutCodeMapper>();
 builder.Services.AddScoped<MarketApi.Service.IServices, MarketApi.Service.Service>();
 builder.Services.AddDbContext<MarketDb>(options =>
     options.UseSqlServer("Server=.;Database=MarketDb;Trusted_Connection=True;Encrypt=False"));
+
+//// seriLog configuration and add to builder
+//Log.Logger = new LoggerConfiguration()
+//    .WriteTo.Console()
+//    .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day)
+//    .CreateLogger();
+
+
+//builder.Logging.AddSerilog();
+////builder.Host.UseSerilog();
+
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information() // حداقل سطح لاگ کلی
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) // فیلتر لاگ‌های Microsoft
+    .MinimumLevel.Override("System", LogEventLevel.Warning)    // فیلتر لاگ‌های System
+    .WriteTo.Console()
+    .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Logging.ClearProviders(); // حذف لاگ‌های پیش‌فرض
+builder.Logging.AddSerilog();     // اضافه کردن Serilog
+
 
 // JWT Authentication configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
