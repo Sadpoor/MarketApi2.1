@@ -96,16 +96,7 @@ namespace MarketApi.Service
                 return -3; //invalid usern in token . may be token expired
             }
             user.UserCart.Products.Add(product);
-            _logger.LogInformation($"Request: add product:{product.Name} to user :{user.PhoneNumber} cart.");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: product:{product.Name} added to user :{user.PhoneNumber} cart successfully.");
-            }catch(Exception ex) {
-                _logger.LogError($"Error adding product: {product.Name} to user: {user.PhoneNumber} cart. message: {ex.Message}");
-                return -4; // error in saving changes
-            }
-    
+            await _context.SaveChangesAsync();
             return 1; //succeed
         }
         public async Task<int> EmptyCartAsync(int userID)
@@ -117,16 +108,7 @@ namespace MarketApi.Service
                 return -3; //invalid usern in token . may be token expired
             }
             user.UserCart.Products.Clear();
-            _logger.LogInformation($"Request: empty cart for user {user.PhoneNumber}.");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: cart for user {user.PhoneNumber} emptied successfully.");
-            }
-            catch(Exception ex) {
-                _logger.LogError($"Error emptying cart for user {user.PhoneNumber}: {ex.Message}");
-                return -4; // error in saving changes
-            }
+            await _context.SaveChangesAsync();
             return 1; //succeed
         }
         public async Task<CheckOutCartDto?> GetCartAsync(int userID)
@@ -158,32 +140,13 @@ namespace MarketApi.Service
             }
 
             DiscountCode? discountCode = null;
-            _logger.LogInformation($"Request: find discount code {Code} for user {user.PhoneNumber}.");
-            try
-            {
-                discountCode= await _context.Discounts.FirstOrDefaultAsync(d => d.Code == Code);
-                //_logger.LogInformation($"Result: discount code {Code} found for user {user.PhoneNumber}.");
-            }catch(Exception ex)
-            {
-                _logger.LogError($"Error finding discount code {Code} for user {user.PhoneNumber}: {ex.Message}");
-                //return false; // error in finding discount code
-            }
+            discountCode = await _context.Discounts.FirstOrDefaultAsync(d => d.Code == Code);
             if (discountCode == null)
             {
                 return false; // invalid discount code
             }
             user.UserCart.ApplyedDiscountCode = discountCode;
-            _logger.LogInformation($"Request: apply discount code {Code} to user {user.PhoneNumber}.");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: discount code {Code} applied to user {user.PhoneNumber} successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error applying discount code {Code} for user {user.PhoneNumber}: {ex.Message}");
-                //return false; // error in saving changes
-            }
+            await _context.SaveChangesAsync();
             return true;
         }
 
@@ -199,18 +162,7 @@ namespace MarketApi.Service
                 product.Quantity -= 1;
                 product.Sales += 1;
             }
-            _logger.LogInformation($"Request: checkout for user {user.PhoneNumber} with {user.UserCart.Products.Count} products.");
-
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: checkout for user {user.PhoneNumber} completed successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error during checkout for user {user.PhoneNumber}: {ex.Message}");
-                //return false; // error in saving changes
-            }
+            await _context.SaveChangesAsync();
             user.UserCart.Products.Clear();
             return true;
         }
@@ -238,18 +190,8 @@ namespace MarketApi.Service
 
             
             user.Rates.Add(newRate);
-            _logger.LogInformation($"Request: user {user.PhoneNumber} rates product {product.Name} with {dto.Rate} stars.");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: Rate {user.PhoneNumber} for product {product.Name} successfully added.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error adding rate for product {product.Name} by user {user.PhoneNumber}: {ex.Message}");
-                //return false; // error in saving changes
-            }
-                return true;
+            await _context.SaveChangesAsync();
+            return true;
         }
         public decimal TotalPrice(Cart userCart)
         {
@@ -268,46 +210,14 @@ namespace MarketApi.Service
         public async Task<User> SignupAsync(AddUserDto userDto)
         {
             User newUser = _userMapper.ToEntity(userDto);
-            _logger.LogInformation($"Request: sign up for new user: {newUser.PhoneNumber} .");
-            try
-            {
-                await _context.Users.AddAsync(newUser);
-                //_logger.LogInformation($"Result: user {newUser.PhoneNumber} added to database.");
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError($"Error adding user {newUser.PhoneNumber}: {ex.Message}");
-                //throw; // rethrow the exception to handle it in the calling code
-            }
-
-            _logger.LogInformation($"Request: sign up for new user: {newUser.PhoneNumber} .");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: user {newUser.PhoneNumber} signed up successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error signing up user {newUser.PhoneNumber}: {ex.Message}");
-                //throw; // rethrow the exception to handle it in the calling code
-            }
-           
+            await _context.Users.AddAsync(newUser);
+            await _context.SaveChangesAsync();
             return newUser;
         }
         public async Task<string?> LoginAsync(LoginUserDto userDto)
         {
             User? user = null;
-            _logger.LogInformation($"Request: login user phone: {userDto.PhoneNumber}.");
-            try
-            {
-                user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == userDto.PhoneNumber && u.Password == userDto.Password);
-                //_logger.LogInformation($"Result: user {userDto.PhoneNumber} with this pass found. sent for generat Token.");
-            }
-            catch
-            {
-                _logger.LogError($"Error: Founding user {userDto.PhoneNumber} failed");
-                //return ...
-            }
+            user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == userDto.PhoneNumber && u.Password == userDto.Password);
             if (user == null) return null;
             return GenerateJwtToken(user);
         }
@@ -326,15 +236,7 @@ namespace MarketApi.Service
                 return null;
             }
             _userMapper.UpdateEntity(userUp, user);
-            _logger.LogInformation($"Request: update user {user.PhoneNumber} information.");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: user {user.PhoneNumber} information updated successfully.");
-            }catch (Exception ex) {
-                _logger.LogError($"Error updating user {user.PhoneNumber} information: {ex.Message}");
-                //return null; // error in saving changes
-            }
+            await _context.SaveChangesAsync();
             return user;
         }
 
@@ -344,29 +246,8 @@ namespace MarketApi.Service
         public async Task<Product> AddProductAsync(AddProductDto productDto)
         {
             var product = _productMapper.ToEntity(productDto);
-            _logger.LogInformation($"Request: add product {product.Name} with price {product.Price} to inventory.");
-            try
-            {
-                await _context.Products.AddAsync(product);
-                //_logger.LogInformation($"Result: product {product.Name} added to inventory successfully.");
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError($"Error adding product {product.Name}: {ex.Message}");
-                //throw; // rethrow the exception to handle it in the calling code
-            }
-            
-            _logger.LogInformation($"Request: add product {product.Name} with price {product.Price} to inventory.");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: product {product.Name} added to inventory successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error adding product {product.Name}: {ex.Message}");
-                //throw; // rethrow the exception to handle it in the calling code
-            }
+            await _context.Products.AddAsync(product);
+            await _context.SaveChangesAsync();
             return product;
         }
         public async Task<Product?> UpdateProductAsync(UpdateProductDto productUp)
@@ -377,21 +258,8 @@ namespace MarketApi.Service
                 return null;
             }
             _productMapper.UpdateEntity(productUp, product);
-            _logger.LogInformation($"Request: update product id: {product.ID}. old/new valu. " +
-                $"name:{product.Name}/{productUp.Name} ,price {product.Price}/{productUp.Price}, " +
-                $"discription:{product.Description}/{productUp.Description} , Catrgory: {product.Category}/{productUp.Category}" +
-                $"DiscountPrecent: {product.DiscountPrecent}/{productUp.DiscountPrecent}.");
-            try
-            {
-                await _context.SaveChangesAsync();
-               // _logger.LogInformation($"Result: product {product.ID} updated successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error updating product {product.ID}: {ex.Message}");
-                ///return
-            }
-                return product;
+            await _context.SaveChangesAsync();
+            return product;
         }
         public async Task <bool> DeleteProductAsync(int id)
         {
@@ -400,57 +268,16 @@ namespace MarketApi.Service
             {
                 return false;
             }
-            _logger.LogInformation($"Request: delete product id:{id} name:{product.Name}.");
-            try
-            {
-                _context.Products.Remove(product);
-                //_logger.LogInformation($"Result: product {product.Name} with id:{id} removed from inventory.");
-            }
-            catch
-            {
-                _logger.LogError($"Error deleting product {id}: product not found.");
-                //return false; // product not found
-            }
-            
-            _logger.LogInformation($"Reauest to delet product name:{product.Name} id:{product.ID} sent ");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"delet product id:{id} successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error deleting product {id}: {ex.Message}");
-                return false;
-            }
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> SetDiscountCodeAsync(AddDiscountCodeDto Code)
         {
             DiscountCode discountCode = _dicountCodeMapper.ToEntity(Code);
-            _logger.LogInformation($"Request: set discountCode. Code:{Code.Code} DiscountPrecent: {Code.DiscountPrecent}.");
-            try
-            {
-                _context.Discounts.Add(discountCode);
-                //_logger.LogInformation($"Result: discountCode {Code.Code} added to database.");
-            }
-            catch(DbUpdateException ex)
-            {
-                _logger.LogError($"Error adding discount code {Code.Code}: code already exists or invalid data.");
-                //return false; // error in adding discount code
-            }
-            
-            _logger.LogInformation($"Request: set dicountCode. Code:{Code.Code} DiscountPrecent: {Code.DiscountPrecent}");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: discountCode: {Code.Code} successfully added");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error adding discount code {Code.Code}: {ex.Message}");
-            }
+            _context.Discounts.Add(discountCode);
+            await _context.SaveChangesAsync();
             return true;
         }
         public async Task<bool> AddToInventoryAsync(AddInventoryDto dto)
@@ -459,17 +286,7 @@ namespace MarketApi.Service
             if (product == null) return false;
             product.Price = dto.price;
             product.Quantity += dto.quantity;
-            _logger.LogInformation($"Request: add to inventory product id:{dto.id} name:{product.Name} with price {dto.price} and quantity {dto.quantity}.");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: product {product.Name} with id:{dto.id} added to inventory successfully.");
-
-            }
-            catch( DbUpdateException ex) 
-            {
-                _logger.LogError($"Error adding product {dto.id} to inventory failed.");
-            }
+            await _context.SaveChangesAsync();
             return true;
         }
         public async Task<bool> DeleteUserAsync(int id)
@@ -479,18 +296,8 @@ namespace MarketApi.Service
             {
                 return false;
             }
-            _logger.LogInformation($"Request: delete user id:{id} phoneNumber:{user.PhoneNumber}.");
-            try
-            {
-                _context.Users.Remove(user);
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: user {user.PhoneNumber} with id:{id} removed from database successfully.");
-            }catch (Exception ex) {
-                _logger.LogError($"Error deleting user {user.PhoneNumber}: {ex.Message}");
-                //return false; // error in saving changes
-            }
-
-
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
             return true;
         }
         public async Task<bool> UpgradeUserAsync(int id)
@@ -501,17 +308,7 @@ namespace MarketApi.Service
                 return false;
             }
             user.Role = RoleEnum.Admin;
-            _logger.LogInformation($"Request: Upgrad user {user.PhoneNumber} to Admin.");
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: User {user.PhoneNumber} upgraded to Admin successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error upgrading user {user.PhoneNumber}: {ex.Message}");
-                return false;
-            }
+            await _context.SaveChangesAsync();
             return true;
         }
         public async Task<bool> DowngradeUserAsync(int id)
@@ -522,48 +319,19 @@ namespace MarketApi.Service
                 return false;
             }
             user.Role = RoleEnum.User;
-            _logger.LogInformation($"Request: Downgrade user {user.PhoneNumber} to User.");
-            
-            try
-            {
-                await _context.SaveChangesAsync();
-                //_logger.LogInformation($"Result: User {user.PhoneNumber} downgraded to User successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error downgrading user {user.PhoneNumber}: {ex.Message}");
-                return false;
-            }
+            await _context.SaveChangesAsync();
             return true;
         }
         public async Task<User?> findUserAsync(int userID)
         {
             _logger.LogInformation($"Request: find user id:{userID}");
-            User? user = null;
-            try
-            {
-                user = await _context.Users.FirstOrDefaultAsync(u => u.ID == userID);
-                //_logger.LogInformation($"use {userID} found seccessfully");
-            }
-            catch
-            {
-                _logger.LogError($"Error: find user {userID} failed.");
-            }
+            User? user= await _context.Users.FirstOrDefaultAsync(u => u.ID == userID);
             return user;
         }
 
         public async Task<Product?> findProductAsync(int productId)
-        {
-            _logger.LogInformation($"Request: find product id:{productId}");
-            Product? product = null;
-             { 
-                product = await _context.Products.FirstOrDefaultAsync(u => u.ID == productId);
-                _logger.LogInformation($"Product {productId} found successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error finding product {productId}: {ex.Message}");
-            }
+        { 
+            Product? product = await _context.Products.FirstOrDefaultAsync(u => u.ID == productId);
             return product;
         }
 
