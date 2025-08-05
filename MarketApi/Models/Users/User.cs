@@ -16,7 +16,10 @@ namespace MarketApi.Models.Users
         public string Password { get; set; }  // also we can hash it
         public RoleEnum Role { get; set; } = RoleEnum.User;
 
+        //fk to cart
+        public int CartID { get; set; } = 0; 
         public Cart UserCart { get; set; } = new();
+
         public List<CustomerRate> Rates { get; set; } = new();
     }
 
@@ -24,14 +27,16 @@ namespace MarketApi.Models.Users
     {
         [Key]
         public int ID { get; set; }
-        public List<Product> Products = new();
+
+        
+        public List<Product> Products { get; set; } = new();
 
         //fk to discount 
         public int? DiscountCodeID { get; set; } =null;
         public ali.DiscountCode? ApplyedDiscountCode { get; set; } = null;
 
         //fk to user
-        public int UserID { get; set; }
+        //public int UserID { get; set; }
         public User User { get; set; }
     }
 

@@ -1,4 +1,5 @@
 ﻿using MarketApi.Models.Rating;
+using MarketApi.Models.Users;
 using System.ComponentModel.DataAnnotations;
 
 namespace MarketApi.Models.Products
@@ -20,6 +21,8 @@ namespace MarketApi.Models.Products
 
             public decimal Price { get; set; }
             public int Quantity { get; set; } = 0;
+
+            public List<Cart> Carts { get; set; } = new();
 
         }
 

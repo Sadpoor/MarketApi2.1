@@ -12,6 +12,7 @@ namespace MarketApi.Data.MarketDb
     {
         public MarketDb(DbContextOptions<MarketDb> options) : base(options) { }
         public DbSet<User> Users { get; set; }
+        public DbSet<Cart> Carts { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<DiscountCode> Discounts { get; set; }
 
@@ -20,9 +21,10 @@ namespace MarketApi.Data.MarketDb
             base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<Cart>(entity =>
             {
-                entity.HasOne(c => c.User)
-                    .WithOne(u => u.UserCart)
-                    .HasForeignKey<Cart>(c => c.UserID);
+                //entity.HasOne(c => c.User)
+                //    .WithOne(u => u.UserCart)
+                //    .HasForeignKey<Cart>(c => c.UserID);
+               
                 entity.HasOne(c => c.ApplyedDiscountCode)
                     .WithOne()
                     .HasForeignKey<Cart>(c => c.DiscountCodeID);
@@ -46,14 +48,18 @@ namespace MarketApi.Data.MarketDb
 
             });
             modelBuilder.Entity<User>(entity =>
-            {
+            {   
+                entity.HasOne(u => u.UserCart)
+                    .WithOne(c => c.User)
+                    .HasForeignKey<User>(u => u.CartID);
                 entity.HasIndex(u => u.PhoneNumber)
                     .IsUnique();
             });
 
             //seedData
-            modelBuilder.ApplyConfiguration(new UserSeedData());
-            modelBuilder.ApplyConfiguration(new ProductSeedData());
+            
+            //    modelBuilder.ApplyConfiguration(new UserSeedData());
+            //modelBuilder.ApplyConfiguration(new ProductSeedData());
 
         }
 
